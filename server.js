@@ -12,6 +12,9 @@ const setupWebhookCron = require('./utils/webhookCron');
 // Initialize Express app
 const app = express();
 
+// Trust proxy (required for Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 connectDB();
 
