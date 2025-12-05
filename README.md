@@ -4,7 +4,7 @@ Express.js backend with MongoDB, Airtable OAuth, webhooks, and file uploads.
 
 ##  Live API
 
-**Production**: `https://your-backend.railway.app`
+**Production**: `https://your-backend.onrender.com`
 
 ##  Features
 
@@ -55,32 +55,37 @@ npm run dev
 
 Server runs at `http://localhost:5000`
 
-##  Railway Deployment
+##  Render Deployment
 
 ### Environment Variables
-Set these in Railway dashboard:
+Set these in Render dashboard:
 ```env
 NODE_ENV=production
 PORT=5000
 MONGODB_URI=mongodb+srv://...
 AIRTABLE_CLIENT_ID=...
 AIRTABLE_CLIENT_SECRET=...
-AIRTABLE_REDIRECT_URI=https://your-backend.railway.app/api/auth/airtable/callback
+AIRTABLE_REDIRECT_URI=https://your-backend.onrender.com/api/auth/airtable/callback
 FRONTEND_URL=https://your-frontend.vercel.app
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
-WEBHOOK_BASE_URL=https://your-backend.railway.app
+WEBHOOK_BASE_URL=https://your-backend.onrender.com
 JWT_SECRET=production_secret
 SESSION_SECRET=production_secret
 ENCRYPTION_KEY=32_char_hex
 ```
 
 ### Deploy Steps
-1. Connect GitHub repo to Railway
-2. Set root directory to `/` (backend is root)
-3. Add environment variables
-4. Deploy!
+1. Create new Web Service on Render
+2. Connect GitHub repo: `Airtable-Form-Builder---backend`
+3. Configure:
+   - **Name**: airtable-form-builder-backend
+   - **Runtime**: Node
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. Add environment variables from above
+5. Deploy!
 
 ##  API Endpoints
 
