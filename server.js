@@ -30,8 +30,26 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000'
+].filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (e.g., curl/Postman)
+    if (!origin) return callback(null, true);
+
+    // Allow exact matches from env or local dev
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Allow Vercel preview deployments
+    const vercelPreview = /https?:\/\/.*vercel.app$/;
+    if (vercelPreview.test(origin)) return callback(null, true);
+
+    return callback(new Error('Not allowed by CORS')); 
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
