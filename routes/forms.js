@@ -430,4 +430,40 @@ router.post('/:formId/submit',
   }
 );
 
+/**
+ * @route   GET /api/forms/:formId/responses
+ * @desc    Get all responses for a form (owner only)
+ * @access  Private
+ */
+router.get('/:formId/responses',
+  authenticate,
+  param('formId').isMongoId().withMessage('Invalid form ID'),
+  handleValidationErrors,
+  async (req, res, next) => {
+    try {
+      const form = await Form.findById(req.params.formId);
+
+      if (!form) {
+        throw new AppError('Form not found', 404);
+      }
+
+      if (form.ownerId.toString() !== req.userId.toString()) {
+        throw new AppError('Not authorized to view responses', 403);
+      }
+
+      const responses = await Response.find({ formId: req.params.formId })
+        .sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        count: responses.length,
+        data: responses
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = router;
