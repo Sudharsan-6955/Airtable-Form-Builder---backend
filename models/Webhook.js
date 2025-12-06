@@ -21,17 +21,14 @@ const webhookSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Webhook notification spec
   notificationUrl: {
     type: String,
     required: true
   },
-  // Cursor for incremental updates
   cursor: {
     type: Number,
     default: 1
   },
-  // Status tracking
   isActive: {
     type: Boolean,
     default: true,
@@ -47,7 +44,6 @@ const webhookSchema = new mongoose.Schema({
   expiresAt: {
     type: Date
   },
-  // Error tracking
   errorCount: {
     type: Number,
     default: 0
@@ -60,13 +56,11 @@ const webhookSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
 webhookSchema.index({ formId: 1 });
 webhookSchema.index({ airtableWebhookId: 1 });
 webhookSchema.index({ isActive: 1, lastPingAt: 1 });
 webhookSchema.index({ airtableBaseId: 1, airtableTableId: 1 });
 
-// Method to check if webhook needs refresh (ping)
 webhookSchema.methods.needsRefresh = function() {
   const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
   return this.lastPingAt < sixDaysAgo;

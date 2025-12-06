@@ -4,11 +4,6 @@ const { authenticate } = require('../middleware/auth');
 const airtableService = require('../utils/airtableService');
 const AppError = require('../utils/AppError');
 
-/**
- * @route   GET /api/airtable/bases
- * @desc    Get list of user's Airtable bases
- * @access  Private
- */
 router.get('/bases', authenticate, async (req, res, next) => {
   try {
     const bases = await airtableService.getBases(req.user.accessToken);
@@ -22,11 +17,6 @@ router.get('/bases', authenticate, async (req, res, next) => {
   }
 });
 
-/**
- * @route   GET /api/airtable/bases/:baseId/tables
- * @desc    Get tables in a specific base
- * @access  Private
- */
 router.get('/bases/:baseId/tables', authenticate, async (req, res, next) => {
   try {
     const { baseId } = req.params;
@@ -41,11 +31,6 @@ router.get('/bases/:baseId/tables', authenticate, async (req, res, next) => {
   }
 });
 
-/**
- * @route   GET /api/airtable/bases/:baseId/tables/:tableId/fields
- * @desc    Get fields for a specific table (only supported types)
- * @access  Private
- */
 router.get('/bases/:baseId/tables/:tableId/fields', authenticate, async (req, res, next) => {
   try {
     const { baseId, tableId } = req.params;
@@ -55,7 +40,6 @@ router.get('/bases/:baseId/tables/:tableId/fields', authenticate, async (req, re
       tableId
     );
     
-    // Filter to only supported field types
     const supportedFields = airtableService.filterSupportedFields(fields);
     
     res.json({

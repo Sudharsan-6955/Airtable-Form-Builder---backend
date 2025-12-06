@@ -53,16 +53,13 @@ const questionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  // For select types
   options: [{
     type: String
   }],
-  // Conditional logic rules
   conditionalRules: {
     type: conditionalRulesSchema,
     default: null
   },
-  // Display order
   order: {
     type: Number,
     default: 0
@@ -106,7 +103,6 @@ const formSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Stats
   submissionCount: {
     type: Number,
     default: 0
@@ -118,12 +114,10 @@ const formSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for efficient queries
 formSchema.index({ ownerId: 1, createdAt: -1 });
 formSchema.index({ airtableBaseId: 1, airtableTableId: 1 });
 formSchema.index({ isActive: 1 });
 
-// Validate unique questionKeys within a form
 formSchema.pre('save', function(next) {
   const questionKeys = this.questions.map(q => q.questionKey);
   const uniqueKeys = new Set(questionKeys);

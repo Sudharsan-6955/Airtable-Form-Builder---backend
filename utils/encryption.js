@@ -4,9 +4,6 @@ const algorithm = 'aes-256-cbc';
 const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY || '0'.repeat(64), 'hex');
 const IV_LENGTH = 16;
 
-/**
- * Encrypt sensitive data (e.g., access tokens)
- */
 function encrypt(text) {
   if (!text) return null;
   
@@ -19,9 +16,6 @@ function encrypt(text) {
   return iv.toString('hex') + ':' + encrypted;
 }
 
-/**
- * Decrypt sensitive data
- */
 function decrypt(text) {
   if (!text) return null;
   

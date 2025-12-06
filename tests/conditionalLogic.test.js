@@ -164,7 +164,6 @@ describe('Conditional Logic - shouldShowQuestion', () => {
     });
 
     it('should return true when all conditions are true', () => {
-      // OR with multi-condition
       const rulesMulti = {
         logic: 'OR',
         conditions: [

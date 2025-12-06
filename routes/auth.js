@@ -7,31 +7,20 @@ const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const AppError = require('../utils/AppError');
 
-// Store PKCE verifiers temporarily (in production, use Redis or session store)
 const pkceStore = new Map();
 
-// Airtable OAuth endpoints
 const AIRTABLE_AUTH_URL = 'https://airtable.com/oauth2/v1/authorize';
 const AIRTABLE_TOKEN_URL = 'https://airtable.com/oauth2/v1/token';
 
-/**
- * @route   GET /api/auth/airtable
- * @desc    Initiate Airtable OAuth flow
- * @access  Public
- */
 router.get('/airtable', (req, res) => {
   try {
-    // Generate PKCE parameters
     const { codeVerifier, codeChallenge, codeChallengeMethod } = generatePKCE();
     const state = generateState();
 
-    // Store code verifier with state as key
     pkceStore.set(state, codeVerifier);
 
-    // Clean up old entries after 10 minutes
     setTimeout(() => pkceStore.delete(state), 10 * 60 * 1000);
 
-    // Build authorization URL
     const params = new URLSearchParams({
       client_id: process.env.AIRTABLE_CLIENT_ID,
       redirect_uri: process.env.AIRTABLE_REDIRECT_URI,
@@ -58,11 +47,6 @@ router.get('/airtable', (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/auth/airtable/callback
- * @desc    Handle Airtable OAuth callback
- * @access  Public
- */
 router.get('/airtable/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
@@ -74,7 +58,6 @@ router.get('/airtable/callback', async (req, res) => {
       });
     }
 
-    // Retrieve code verifier
     const codeVerifier = pkceStore.get(state);
     if (!codeVerifier) {
       return res.status(400).json({
@@ -83,10 +66,8 @@ router.get('/airtable/callback', async (req, res) => {
       });
     }
 
-    // Clean up
     pkceStore.delete(state);
 
-    // Exchange authorization code for access token
     const credentials = Buffer.from(
       `${process.env.AIRTABLE_CLIENT_ID}:${process.env.AIRTABLE_CLIENT_SECRET}`
     ).toString('base64');
@@ -114,7 +95,6 @@ router.get('/airtable/callback', async (req, res) => {
       scope
     } = tokenResponse.data;
 
-    // Fetch user info from Airtable
     const userResponse = await axios.get('https://api.airtable.com/v0/meta/whoami', {
       headers: {
         'Authorization': `Bearer ${access_token}`
@@ -123,14 +103,11 @@ router.get('/airtable/callback', async (req, res) => {
 
     const airtableUser = userResponse.data;
 
-    // Calculate token expiration
     const tokenExpiresAt = new Date(Date.now() + expires_in * 1000);
 
-    // Find or create user
     let user = await User.findOne({ airtableUserId: airtableUser.id });
 
     if (user) {
-      // Update existing user
       user.accessToken = access_token;
       user.refreshToken = refresh_token;
       user.tokenExpiresAt = tokenExpiresAt;
@@ -139,7 +116,6 @@ router.get('/airtable/callback', async (req, res) => {
       user.name = airtableUser.name || user.name;
       user.profileData = airtableUser;
     } else {
-      // Create new user
       user = new User({
         airtableUserId: airtableUser.id,
         email: airtableUser.email,
@@ -154,22 +130,19 @@ router.get('/airtable/callback', async (req, res) => {
 
     await user.save();
 
-    // Generate JWT for our application
     const token = jwt.sign(
       { userId: user._id, airtableUserId: user.airtableUserId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    // Set HTTP-only cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // Redirect to frontend with token
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${frontendUrl}/callback?token=${token}`);
 
@@ -181,11 +154,6 @@ router.get('/airtable/callback', async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/auth/me
- * @desc    Get current authenticated user
- * @access  Private
- */
 router.get('/me', authenticate, async (req, res) => {
   try {
     res.json({
@@ -201,14 +169,8 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/auth/logout
- * @desc    Logout user
- * @access  Private
- */
 router.post('/logout', authenticate, (req, res) => {
   try {
-    // Clear cookie
     res.clearCookie('token');
     
     res.json({
@@ -224,11 +186,6 @@ router.post('/logout', authenticate, (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/auth/refresh
- * @desc    Refresh Airtable access token
- * @access  Private
- */
 router.post('/refresh', authenticate, async (req, res) => {
   try {
     const user = req.user;
@@ -240,7 +197,6 @@ router.post('/refresh', authenticate, async (req, res) => {
       });
     }
 
-    // Request new access token
     const credentials = Buffer.from(
       `${process.env.AIRTABLE_CLIENT_ID}:${process.env.AIRTABLE_CLIENT_SECRET}`
     ).toString('base64');
@@ -261,7 +217,6 @@ router.post('/refresh', authenticate, async (req, res) => {
 
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
 
-    // Update user tokens
     user.accessToken = access_token;
     if (refresh_token) {
       user.refreshToken = refresh_token;

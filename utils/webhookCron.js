@@ -3,17 +3,11 @@ const Webhook = require('../models/Webhook');
 const User = require('../models/User');
 const { refreshWebhook } = require('./airtableService');
 
-/**
- * Setup cron job to refresh webhook cursors every 6 days
- * Airtable webhooks expire after 7 days of inactivity
- */
 function setupWebhookCron() {
-  // Run every day at 2 AM
   cron.schedule('0 2 * * *', async () => {
     console.log('🔄 Running webhook refresh cron job...');
     
     try {
-      // Find all active webhooks that need refresh (older than 6 days)
       const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
       
       const webhooks = await Webhook.find({
@@ -25,7 +19,6 @@ function setupWebhookCron() {
 
       for (const webhook of webhooks) {
         try {
-          // Get form owner to access their token
           const form = webhook.formId;
           if (!form) {
             console.warn(`Form not found for webhook ${webhook._id}`);
@@ -38,14 +31,12 @@ function setupWebhookCron() {
             continue;
           }
 
-          // Refresh the webhook
           await refreshWebhook(
             user.accessToken,
             webhook.airtableBaseId,
             webhook.airtableWebhookId
           );
 
-          // Update lastPingAt
           webhook.lastPingAt = new Date();
           webhook.errorCount = 0;
           await webhook.save();
@@ -54,14 +45,12 @@ function setupWebhookCron() {
         } catch (error) {
           console.error(`❌ Error refreshing webhook ${webhook._id}:`, error.message);
           
-          // Track error
           webhook.errorCount += 1;
           webhook.lastError = {
             message: error.message,
             timestamp: new Date()
           };
 
-          // Deactivate webhook after 3 consecutive failures
           if (webhook.errorCount >= 3) {
             webhook.isActive = false;
             console.warn(`⚠️ Deactivated webhook ${webhook._id} after 3 failures`);

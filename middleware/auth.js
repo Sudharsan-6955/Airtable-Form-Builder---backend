@@ -1,12 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-/**
- * Middleware to verify JWT token and attach user to request
- */
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from Authorization header or cookie
     let token;
     
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -22,10 +18,8 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Get user from database
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -35,7 +29,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Check if Airtable token is expired
     if (user.isTokenExpired()) {
       return res.status(401).json({
         success: false,
@@ -44,7 +37,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
     req.user = user;
     req.userId = user._id;
 
@@ -68,9 +60,6 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-/**
- * Optional authentication - attaches user if token exists, but doesn't fail
- */
 const optionalAuth = async (req, res, next) => {
   try {
     let token;
@@ -93,7 +82,6 @@ const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // Continue without authentication
     next();
   }
 };

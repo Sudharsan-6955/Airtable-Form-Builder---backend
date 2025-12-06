@@ -9,9 +9,6 @@ const User = require('../models/User');
 const { createWebhook, deleteWebhook } = require('../utils/airtableService');
 const AppError = require('../utils/AppError');
 
-/**
- * Validation middleware
- */
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -24,23 +21,15 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-/**
- * @route   POST /api/webhooks/airtable
- * @desc    Receive webhook notifications from Airtable
- * @access  Public (verified by Airtable)
- */
 router.post('/airtable', async (req, res, next) => {
   try {
     const payload = req.body;
 
     console.log('📥 Received Airtable webhook:', JSON.stringify(payload, null, 2));
 
-    // Airtable sends different payload structures
-    // Handle notification payload
     if (payload.base && payload.webhook) {
       const { base, webhook, timestamp } = payload;
       
-      // Find webhook in our database
       const webhookDoc = await Webhook.findOne({
         airtableWebhookId: webhook.id
       });
@@ -50,17 +39,14 @@ router.post('/airtable', async (req, res, next) => {
         return res.status(200).json({ success: true });
       }
 
-      // Update last notification time
       webhookDoc.lastNotificationAt = new Date(timestamp);
       
-      // Handle cursor update if present
       if (payload.cursor !== undefined) {
         webhookDoc.cursor = payload.cursor;
       }
 
       await webhookDoc.save();
 
-      // Process changes if present
       if (payload.changedTablesById) {
         await processWebhookChanges(webhookDoc, payload.changedTablesById);
       }
@@ -72,21 +58,16 @@ router.post('/airtable', async (req, res, next) => {
 
   } catch (error) {
     console.error('Error processing webhook:', error);
-    // Always return 200 to Airtable to avoid retries
     res.status(200).json({ success: true });
   }
 });
 
-/**
- * Process webhook changes (updates/deletes)
- */
 async function processWebhookChanges(webhook, changedTablesById) {
   try {
     const tableChanges = changedTablesById[webhook.airtableTableId];
     
     if (!tableChanges) return;
 
-    // Handle changed records (updates)
     if (tableChanges.changedRecordsById) {
       for (const [recordId, change] of Object.entries(tableChanges.changedRecordsById)) {
         try {
@@ -96,10 +77,7 @@ async function processWebhookChanges(webhook, changedTablesById) {
           });
 
           if (response) {
-            // Update the response with new data from Airtable
             if (change.current && change.current.cellValuesByFieldId) {
-              // Convert Airtable field values to our answer format
-              // This is simplified - in production, you'd need to map field IDs to question keys
               response.lastSyncedAt = new Date();
               await response.save();
               
@@ -112,7 +90,6 @@ async function processWebhookChanges(webhook, changedTablesById) {
       }
     }
 
-    // Handle destroyed records (deletes)
     if (tableChanges.destroyedRecordIds && tableChanges.destroyedRecordIds.length > 0) {
       for (const recordId of tableChanges.destroyedRecordIds) {
         try {
@@ -122,7 +99,6 @@ async function processWebhookChanges(webhook, changedTablesById) {
           });
 
           if (response) {
-            // Mark as deleted (soft delete)
             response.deletedInAirtable = true;
             response.lastSyncedAt = new Date();
             await response.save();
@@ -135,9 +111,7 @@ async function processWebhookChanges(webhook, changedTablesById) {
       }
     }
 
-    // Handle created records
     if (tableChanges.createdRecordsById) {
-      // We don't need to process created records since we create them ourselves
       console.log(`ℹ️ ${Object.keys(tableChanges.createdRecordsById).length} records created in Airtable`);
     }
 
@@ -146,11 +120,6 @@ async function processWebhookChanges(webhook, changedTablesById) {
   }
 }
 
-/**
- * @route   POST /api/webhooks/register/:formId
- * @desc    Register webhook for a form
- * @access  Private (owner only)
- */
 router.post('/register/:formId',
   authenticate,
   param('formId').isMongoId().withMessage('Invalid form ID'),
@@ -163,12 +132,10 @@ router.post('/register/:formId',
         throw new AppError('Form not found', 404);
       }
 
-      // Check ownership
       if (form.ownerId.toString() !== req.userId.toString()) {
         throw new AppError('Not authorized to register webhook for this form', 403);
       }
 
-      // Check if webhook already exists
       const existingWebhook = await Webhook.findOne({
         formId: form._id,
         isActive: true
@@ -182,17 +149,14 @@ router.post('/register/:formId',
         });
       }
 
-      // Get user to access their token
       const user = await User.findById(form.ownerId);
       if (!user) {
         throw new AppError('User not found', 500);
       }
 
-      // Create webhook notification URL
       const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || 'http://localhost:5000';
       const notificationUrl = `${webhookBaseUrl}/api/webhooks/airtable`;
 
-      // Webhook specification
       const specification = {
         options: {
           filters: {
@@ -202,7 +166,6 @@ router.post('/register/:formId',
         }
       };
 
-      // Create webhook in Airtable
       const airtableWebhook = await createWebhook(
         user.accessToken,
         form.airtableBaseId,
@@ -210,7 +173,6 @@ router.post('/register/:formId',
         specification
       );
 
-      // Save webhook to database
       const webhook = new Webhook({
         formId: form._id,
         airtableWebhookId: airtableWebhook.id,
@@ -234,11 +196,6 @@ router.post('/register/:formId',
   }
 );
 
-/**
- * @route   DELETE /api/webhooks/:webhookId
- * @desc    Unregister webhook
- * @access  Private (owner only)
- */
 router.delete('/:webhookId',
   authenticate,
   param('webhookId').isMongoId().withMessage('Invalid webhook ID'),
@@ -251,18 +208,15 @@ router.delete('/:webhookId',
         throw new AppError('Webhook not found', 404);
       }
 
-      // Check ownership
       if (webhook.formId.ownerId.toString() !== req.userId.toString()) {
         throw new AppError('Not authorized to delete this webhook', 403);
       }
 
-      // Get user token
       const user = await User.findById(webhook.formId.ownerId);
       if (!user) {
         throw new AppError('User not found', 500);
       }
 
-      // Delete webhook from Airtable
       try {
         await deleteWebhook(
           user.accessToken,
@@ -271,10 +225,8 @@ router.delete('/:webhookId',
         );
       } catch (error) {
         console.error('Error deleting webhook from Airtable:', error);
-        // Continue even if Airtable deletion fails
       }
 
-      // Mark webhook as inactive
       webhook.isActive = false;
       await webhook.save();
 
@@ -289,11 +241,6 @@ router.delete('/:webhookId',
   }
 );
 
-/**
- * @route   GET /api/webhooks/form/:formId
- * @desc    Get webhooks for a form
- * @access  Private (owner only)
- */
 router.get('/form/:formId',
   authenticate,
   param('formId').isMongoId().withMessage('Invalid form ID'),
@@ -306,7 +253,6 @@ router.get('/form/:formId',
         throw new AppError('Form not found', 404);
       }
 
-      // Check ownership
       if (form.ownerId.toString() !== req.userId.toString()) {
         throw new AppError('Not authorized to view webhooks', 403);
       }

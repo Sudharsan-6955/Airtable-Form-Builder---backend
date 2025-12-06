@@ -4,9 +4,6 @@ const AppError = require('./AppError');
 const AIRTABLE_API_BASE = process.env.AIRTABLE_API_BASE_URL || 'https://api.airtable.com/v0';
 const AIRTABLE_META_API = process.env.AIRTABLE_META_API_URL || 'https://api.airtable.com/v0/meta';
 
-/**
- * Create axios instance for Airtable API calls
- */
 function createAirtableClient(accessToken) {
   return axios.create({
     headers: {
@@ -16,9 +13,6 @@ function createAirtableClient(accessToken) {
   });
 }
 
-/**
- * Get list of bases accessible to the user
- */
 async function getBases(accessToken) {
   try {
     const client = createAirtableClient(accessToken);
@@ -38,9 +32,6 @@ async function getBases(accessToken) {
   }
 }
 
-/**
- * Get schema (tables and fields) for a specific base
- */
 async function getBaseSchema(accessToken, baseId) {
   try {
     const client = createAirtableClient(accessToken);
@@ -66,9 +57,6 @@ async function getBaseSchema(accessToken, baseId) {
   }
 }
 
-/**
- * Get fields for a specific table
- */
 async function getTableFields(accessToken, baseId, tableId) {
   try {
     const tables = await getBaseSchema(accessToken, baseId);
@@ -87,9 +75,6 @@ async function getTableFields(accessToken, baseId, tableId) {
   }
 }
 
-/**
- * Supported field types mapping
- */
 const SUPPORTED_FIELD_TYPES = {
   'singleLineText': 'singleLineText',
   'multilineText': 'multilineText',
@@ -98,16 +83,10 @@ const SUPPORTED_FIELD_TYPES = {
   'multipleAttachments': 'multipleAttachments'
 };
 
-/**
- * Check if field type is supported
- */
 function isSupportedFieldType(airtableType) {
   return Object.keys(SUPPORTED_FIELD_TYPES).includes(airtableType);
 }
 
-/**
- * Filter only supported fields
- */
 function filterSupportedFields(fields) {
   return fields
     .filter(field => isSupportedFieldType(field.type))
@@ -117,9 +96,6 @@ function filterSupportedFields(fields) {
     }));
 }
 
-/**
- * Create a record in Airtable
- */
 async function createRecord(accessToken, baseId, tableIdOrName, fields) {
   try {
     const client = createAirtableClient(accessToken);
@@ -145,9 +121,6 @@ async function createRecord(accessToken, baseId, tableIdOrName, fields) {
   }
 }
 
-/**
- * Update a record in Airtable
- */
 async function updateRecord(accessToken, baseId, tableIdOrName, recordId, fields) {
   try {
     const client = createAirtableClient(accessToken);
@@ -171,9 +144,6 @@ async function updateRecord(accessToken, baseId, tableIdOrName, recordId, fields
   }
 }
 
-/**
- * Get a record from Airtable
- */
 async function getRecord(accessToken, baseId, tableIdOrName, recordId) {
   try {
     const client = createAirtableClient(accessToken);
@@ -199,9 +169,6 @@ async function getRecord(accessToken, baseId, tableIdOrName, recordId) {
   }
 }
 
-/**
- * Create a webhook for a base
- */
 async function createWebhook(accessToken, baseId, notificationUrl, specification) {
   try {
     const client = createAirtableClient(accessToken);
@@ -226,9 +193,6 @@ async function createWebhook(accessToken, baseId, notificationUrl, specification
   }
 }
 
-/**
- * Refresh webhook (ping to extend expiration)
- */
 async function refreshWebhook(accessToken, baseId, webhookId) {
   try {
     const client = createAirtableClient(accessToken);
@@ -248,9 +212,6 @@ async function refreshWebhook(accessToken, baseId, webhookId) {
   }
 }
 
-/**
- * Delete a webhook
- */
 async function deleteWebhook(accessToken, baseId, webhookId) {
   try {
     const client = createAirtableClient(accessToken);
