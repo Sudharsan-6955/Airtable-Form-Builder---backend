@@ -56,6 +56,16 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
+// Simple root info
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Airtable Form Builder API',
+    docs: '/health',
+    apiBase: '/api'
+  });
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
