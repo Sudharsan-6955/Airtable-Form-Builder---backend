@@ -67,33 +67,18 @@ async function deleteFile(publicId) {
   }
 }
 
-async function uploadFilesToCloudinary(files = []) {
-  const uploaded = [];
-  for (const file of files) {
-    const result = await uploadFile(file.buffer, file.originalname);
-    uploaded.push({
-      url: result.url,
-      filename: file.originalname,
-      publicId: result.publicId,
-      size: result.size,
-      format: result.format
-    });
-  }
-  return uploaded;
-}
-
-function formatFilesForAirtable(uploadedFiles) {
-  if (!uploadedFiles || uploadedFiles.length === 0) return [];
-  return uploadedFiles.map(file => ({
-    url: file.url,
-    filename: file.filename
+function formatFilesForAirtable(files) {
+  if (!files || files.length === 0) return [];
+  
+  return files.map(file => ({
+    url: file.path || file.secure_url,
+    filename: file.originalname
   }));
 }
 
 module.exports = {
   upload,
   uploadFile,
-  uploadFilesToCloudinary,
   deleteFile,
   formatFilesForAirtable,
   cloudinary
