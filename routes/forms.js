@@ -137,6 +137,7 @@ router.get('/', authenticate, async (req, res, next) => {
  * @access  Public
  */
 router.get('/:formId',
+  authenticate,
   param('formId').isMongoId().withMessage('Invalid form ID'),
   handleValidationErrors,
   async (req, res, next) => {
@@ -145,6 +146,11 @@ router.get('/:formId',
 
       if (!form) {
         throw new AppError('Form not found', 404);
+      }
+
+      // Only owner can fetch the full form definition for rendering
+      if (form.ownerId.toString() !== req.userId.toString()) {
+        throw new AppError('Not authorized to view this form', 403);
       }
 
       if (!form.isActive) {

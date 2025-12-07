@@ -23,6 +23,7 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 router.post('/:formId/submit',
+  authenticate,
   upload.array('files', 10),
   param('formId').isMongoId().withMessage('Invalid form ID'),
   async (req, res, next) => {
