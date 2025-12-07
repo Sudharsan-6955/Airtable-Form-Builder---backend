@@ -7,7 +7,7 @@ const Response = require('../models/Response');
 const User = require('../models/User');
 const { shouldShowQuestion } = require('../utils/conditionalLogic');
 const { createRecord } = require('../utils/airtableService');
-const { upload, formatFilesForAirtable } = require('../utils/fileUpload');
+const { upload, uploadFilesToCloudinary, formatFilesForAirtable } = require('../utils/fileUpload');
 const AppError = require('../utils/AppError');
 
 const handleValidationErrors = (req, res, next) => {
@@ -24,7 +24,7 @@ const handleValidationErrors = (req, res, next) => {
 
 router.post('/:formId/submit',
   authenticate,
-  upload.array('files', 10),
+  upload.any(), // Accept any fieldnames, not just 'files'
   param('formId').isMongoId().withMessage('Invalid form ID'),
   async (req, res, next) => {
     try {
@@ -123,14 +123,15 @@ router.post('/:formId/submit',
             airtableFields[fieldName] = answer;
             break;
 
-          case 'multipleAttachments':
-            const files = req.files?.filter(f => 
-              f.fieldname === `file_${question.questionKey}`
-            );
-            if (files && files.length > 0) {
-              airtableFields[fieldName] = formatFilesForAirtable(files);
+          case 'multipleAttachments': {
+            const files = req.files?.filter(f => f.fieldname === `file_${question.questionKey}`);
+            const filesToUse = (files && files.length > 0) ? files : req.files;
+            if (filesToUse && filesToUse.length > 0) {
+              const uploaded = await uploadFilesToCloudinary(filesToUse);
+              airtableFields[fieldName] = formatFilesForAirtable(uploaded);
             }
             break;
+          }
 
           default:
             airtableFields[fieldName] = answer;
