@@ -6,13 +6,19 @@ const AppError = require('../utils/AppError');
 
 router.get('/bases', authenticate, async (req, res, next) => {
   try {
+    console.log('Fetching bases for user:', req.user._id);
+    console.log('Access token available:', !!req.user.accessToken);
+    
     const bases = await airtableService.getBases(req.user.accessToken);
+    
+    console.log('Bases fetched successfully:', bases.length, 'bases found');
     
     res.json({
       success: true,
       data: bases
     });
   } catch (error) {
+    console.error('Error in /bases route:', error.message);
     next(error);
   }
 });
