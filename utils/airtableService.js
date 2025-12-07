@@ -80,7 +80,17 @@ const SUPPORTED_FIELD_TYPES = {
   'multilineText': 'multilineText',
   'singleSelect': 'singleSelect',
   'multipleSelects': 'multipleSelects',
-  'multipleAttachments': 'multipleAttachments'
+  'multipleAttachments': 'multipleAttachments',
+  'number': 'number',
+  'email': 'email',
+  'url': 'url',
+  'phoneNumber': 'phoneNumber',
+  'date': 'date',
+  'dateTime': 'dateTime',
+  'checkbox': 'checkbox',
+  'rating': 'rating',
+  'currency': 'currency',
+  'percent': 'percent'
 };
 
 function isSupportedFieldType(airtableType) {

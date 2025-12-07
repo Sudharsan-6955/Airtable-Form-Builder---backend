@@ -46,7 +46,7 @@ const questionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['singleLineText', 'multilineText', 'singleSelect', 'multipleSelects', 'multipleAttachments'],
+    enum: ['singleLineText', 'multilineText', 'singleSelect', 'multipleSelects', 'multipleAttachments', 'number', 'email', 'url', 'phoneNumber', 'date', 'dateTime', 'checkbox', 'rating', 'currency', 'percent'],
     required: true
   },
   required: {

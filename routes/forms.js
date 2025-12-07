@@ -40,7 +40,7 @@ router.post('/',
     body('questions.*.questionKey').notEmpty().withMessage('Question key is required'),
     body('questions.*.airtableFieldId').notEmpty().withMessage('Field ID is required'),
     body('questions.*.label').notEmpty().withMessage('Label is required'),
-    body('questions.*.type').isIn(['singleLineText', 'multilineText', 'singleSelect', 'multipleSelects', 'multipleAttachments'])
+    body('questions.*.type').isIn(['singleLineText', 'multilineText', 'singleSelect', 'multipleSelects', 'multipleAttachments', 'number', 'email', 'url', 'phoneNumber', 'date', 'dateTime', 'checkbox', 'rating', 'currency', 'percent'])
       .withMessage('Invalid field type')
   ],
   handleValidationErrors,

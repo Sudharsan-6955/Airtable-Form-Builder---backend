@@ -88,7 +88,26 @@ router.post('/:formId/submit',
         switch (question.type) {
           case 'singleLineText':
           case 'multilineText':
+          case 'email':
+          case 'url':
+          case 'phoneNumber':
             airtableFields[fieldName] = String(answer);
+            break;
+
+          case 'number':
+          case 'currency':
+          case 'percent':
+          case 'rating':
+            airtableFields[fieldName] = Number(answer);
+            break;
+
+          case 'checkbox':
+            airtableFields[fieldName] = Boolean(answer);
+            break;
+
+          case 'date':
+          case 'dateTime':
+            airtableFields[fieldName] = answer; // ISO string format
             break;
 
           case 'singleSelect':
