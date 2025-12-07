@@ -246,16 +246,16 @@ router.delete('/:formId',
         throw new AppError('Not authorized to delete this form', 403);
       }
 
-      // Soft delete - just deactivate
-      form.isActive = false;
-      await form.save();
+        // Hard delete: remove responses and the form itself
+        await Response.deleteMany({ formId: form._id });
+        await form.deleteOne();
 
-      // TODO: Cleanup associated webhooks
+        // TODO: Cleanup associated webhooks if any
 
-      res.json({
-        success: true,
-        message: 'Form deleted successfully'
-      });
+        res.json({
+          success: true,
+          message: 'Form deleted successfully (and responses removed)'
+        });
 
     } catch (error) {
       next(error);
