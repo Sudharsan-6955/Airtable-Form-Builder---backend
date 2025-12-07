@@ -19,7 +19,16 @@ router.get('/airtable', (req, res) => {
 
     pkceStore.set(state, codeVerifier);
 
-    setTimeout(() => pkceStore.delete(state), 10 * 60 * 1000);
+    // Increase timeout to 30 minutes to handle slower redirects
+    setTimeout(() => pkceStore.delete(state), 30 * 60 * 1000);
+
+    // Also store in cookie as backup
+    res.cookie(`oauth_state_${state}`, codeVerifier, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 60 * 1000 // 30 minutes
+    });
 
     const params = new URLSearchParams({
       client_id: process.env.AIRTABLE_CLIENT_ID,
@@ -49,7 +58,14 @@ router.get('/airtable', (req, res) => {
 
 router.get('/airtable/callback', async (req, res) => {
   try {
-    const { code, state } = req.query;
+    const { code, state, error, error_description } = req.query;
+
+    // Handle Airtable errors
+    if (error) {
+      console.error('Airtable OAuth error:', error, error_description);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      return res.redirect(`${frontendUrl}/login?error=${error}&error_description=${encodeURIComponent(error_description || '')}`);
+    }
 
     if (!code || !state) {
       return res.status(400).json({
@@ -58,15 +74,23 @@ router.get('/airtable/callback', async (req, res) => {
       });
     }
 
-    const codeVerifier = pkceStore.get(state);
+    // Try to get codeVerifier from pkceStore or cookie
+    let codeVerifier = pkceStore.get(state);
+    
     if (!codeVerifier) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired state parameter'
-      });
+      // Fallback to cookie
+      codeVerifier = req.cookies[`oauth_state_${state}`];
+    }
+
+    if (!codeVerifier) {
+      console.error('State parameter not found. State:', state);
+      console.error('Available states in pkceStore:', Array.from(pkceStore.keys()));
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      return res.redirect(`${frontendUrl}/login?error=auth_failed&error_description=Session%20expired.%20Please%20try%20logging%20in%20again.`);
     }
 
     pkceStore.delete(state);
+    res.clearCookie(`oauth_state_${state}`);
 
     const credentials = Buffer.from(
       `${process.env.AIRTABLE_CLIENT_ID}:${process.env.AIRTABLE_CLIENT_SECRET}`
